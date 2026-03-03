@@ -1,0 +1,18 @@
+# SmartClean Python Backend Requirements
+
+# No external dependencies required for basic functionality
+# Python 3.7+ standard library only:
+# - sqlite3 (built-in)
+# - json (built-in)
+# - os (built-in)
+# - datetime (built-in)
+# - typing (built-in)
+# - uuid (built-in)
+
+# Optional: For web API (Flask backend)
+# flask==2.3.0
+# flask-cors==4.0.0
+
+# Optional: For advanced features
+# pandas==2.0.0  # For advanced data analysis
+# openpyxl==3.1.0  # For Excel export

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SmartClean - Student Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { padding-bottom: 80px; }
+        .header { background: linear-gradient(135deg, #2196F3, #4CAF50); color: white; padding: 20px; box-shadow: var(--shadow-md); }
+        .welcome-text { font-size: 24px; font-weight: 600; }
+        .quick-actions { padding: 20px; }
+        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-top: 16px; }
+        .action-card { background: var(--white); padding: 24px; border-radius: var(--radius-md); text-align: center; box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.3s; border: 2px solid transparent; }
+        .action-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary-blue); }
+        .action-card i { font-size: 48px; color: var(--primary-blue); margin-bottom: 12px; }
+        .action-card h3 { font-size: 16px; font-weight: 600; margin: 0; }
+        .submissions-section { padding: 20px; }
+        .submission-card { background: var(--white); padding: 16px; border-radius: var(--radius-md); margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+        .submission-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 20px; }
+        .stat-card { background: var(--white); padding: 16px; border-radius: var(--radius-md); text-align: center; box-shadow: var(--shadow-sm); }
+        .stat-value { font-size: 32px; font-weight: 700; color: var(--primary-blue); }
+        .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="language-selector">
+        <label data-i18n="language">Language</label>
+        <div class="language-toggle">
+            <button id="lang-en" class="active" onclick="switchLanguage('en')">🇺🇸 EN</button>
+            <button id="lang-ja" onclick="switchLanguage('ja')">🇯🇵 JP</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="welcome-text">
+            <span data-i18n="student.welcome">Welcome</span>, <span id="userName"></span>
+        </div>
+        <p data-i18n="student.dashboard">Student Dashboard</p>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="totalSubmissions">0</div>
+            <div class="stat-label" data-i18n="stats.totalSubmissions">Total Submissions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="approvedCount">0</div>
+            <div class="stat-label" data-i18n="stats.approved">Approved</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="pendingCount">0</div>
+            <div class="stat-label" data-i18n="stats.pending">Pending</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="avgScore">-</div>
+            <div class="stat-label" data-i18n="stats.avgScore">Avg Score</div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h2><i class="fas fa-bolt"></i> <span data-i18n="student.quickActions">Quick Actions</span></h2>
+        <div class="action-grid">
+            <div class="action-card" onclick="window.location.href='cleaning-form.html'">
+                <i class="fas fa-plus-circle"></i>
+                <h3 data-i18n="student.newSubmission">New Submission</h3>
+            </div>
+            <div class="action-card" onclick="loadSubmissions()">
+                <i class="fas fa-history"></i>
+                <h3 data-i18n="student.viewHistory">View History</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Submissions -->
+    <div class="submissions-section">
+        <h2><i class="fas fa-history"></i> <span data-i18n="student.recentSubmissions">Recent Submissions</span></h2>
+        <div id="submissionsList"></div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="student-dashboard.html" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span data-i18n="nav.home">Home</span>
+        </a>
+        <a href="cleaning-form.html" class="nav-item">
+            <i class="fas fa-plus-circle"></i>
+            <span data-i18n="student.submitCleaning">Submit</span>
+        </a>
+        <a href="#" class="nav-item" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span data-i18n="nav.logout">Logout</span>
+        </a>
+    </div>
+
+    <script src="js/api-client.js"></script>
+    <script src="js/translations.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        const user = checkAuth();
+        
+        if (user && user.role !== 'student') {
+            window.location.href = user.role === 'teacher' ? 'teacher-dashboard.html' : 'admin-dashboard.html';
+        }
+
+        document.getElementById('userName').textContent = user.name;
+
+        function switchLanguage(lang) {
+            langManager.setLanguage(lang);
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + lang).classList.add('active');
+            updatePageTranslations();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentLang = langManager.getLanguage();
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + currentLang).classList.add('active');
+            loadSubmissions();
+            loadStatistics();
+        });
+
+        async function loadStatistics() {
+            try {
+                const response = await fetch(`tables/cleaning_submissions?search=${user.id}&limit=1000`);
+                const data = await response.json();
+                
+                const submissions = data.data || [];
+                const total = submissions.length;
+                const approved = submissions.filter(s => s.status === 'approved').length;
+                const pending = submissions.filter(s => s.status === 'pending').length;
+                
+                const scores = submissions.filter(s => s.score !== null && s.score !== undefined).map(s => s.score);
+                const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : '-';
+                
+                document.getElementById('totalSubmissions').textContent = total;
+                document.getElementById('approvedCount').textContent = approved;
+                document.getElementById('pendingCount').textContent = pending;
+                document.getElementById('avgScore').textContent = avgScore;
+            } catch (error) {
+                console.error('Statistics load error:', error);
+            }
+        }
+
+        async function loadSubmissions() {
+            try {
+                const response = await fetch(`tables/cleaning_submissions?search=${user.id}&limit=10&sort=-created_at`);
+                const data = await response.json();
+                
+                const container = document.getElementById('submissionsList');
+                
+                if (!data.data || data.data.length === 0) {
+                    container.innerHTML = `<p class="text-center text-muted" data-i18n="student.noSubmissions">${t('student.noSubmissions')}</p>`;
+                    return;
+                }
+                
+                container.innerHTML = data.data.map(sub => `
+                    <div class="submission-card">
+                        <div class="submission-header">
+                            <div>
+                                <strong>${sub.classroom_number || 'N/A'}</strong>
+                                <br><small>${formatDate(sub.created_at)}</small>
+                            </div>
+                            <span class="badge badge-${sub.status === 'approved' ? 'success' : sub.status === 'rejected' ? 'danger' : 'warning'}">
+                                ${t('status.' + sub.status)}
+                            </span>
+                        </div>
+                        ${sub.score ? `<div><strong>${t('student.score')}:</strong> ${sub.score}/100</div>` : ''}
+                        ${sub.teacher_feedback ? `<div><small>${sub.teacher_feedback}</small></div>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Load error:', error);
+                document.getElementById('submissionsList').innerHTML = `
+                    <p class="text-center text-muted">${t('messages.error')}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

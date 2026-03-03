@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartClean - Register New Account</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { padding: 20px; background: linear-gradient(135deg, #2196F3, #4CAF50); min-height: 100vh; }
+        .register-container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .register-header { text-align: center; margin-bottom: 30px; }
+        .register-header h1 { color: #2196F3; margin-bottom: 10px; }
+        .role-selector { display: flex; gap: 12px; margin-bottom: 30px; }
+        .role-option { flex: 1; padding: 20px; border: 2px solid #E0E0E0; border-radius: 12px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .role-option:hover { border-color: #2196F3; background: #E3F2FD; }
+        .role-option.active { border-color: #2196F3; background: #2196F3; color: white; }
+        .role-option i { font-size: 32px; display: block; margin-bottom: 8px; }
+        .role-option .role-name { font-weight: 600; font-size: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .password-strength { margin-top: 8px; height: 4px; background: #E0E0E0; border-radius: 2px; overflow: hidden; }
+        .password-strength-bar { height: 100%; width: 0%; transition: all 0.3s; }
+        .strength-weak { background: #F44336; width: 33%; }
+        .strength-medium { background: #FF9800; width: 66%; }
+        .strength-strong { background: #4CAF50; width: 100%; }
+        .back-link { text-align: center; margin-top: 20px; }
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .role-selector { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <label data-i18n="language">Language</label>
+        <div class="language-toggle">
+            <button id="lang-en" class="active" onclick="switchLanguage('en')">🇺🇸 EN</button>
+            <button id="lang-ja" onclick="switchLanguage('ja')">🇯🇵 JP</button>
+        </div>
+    </div>
+
+    <div class="register-container">
+        <div class="register-header">
+            <h1><i class="fas fa-user-plus"></i> <span data-i18n="register.title">Create New Account</span></h1>
+            <p data-i18n="register.description">Register a new student or teacher account</p>
+        </div>
+
+        <!-- Role Selection -->
+        <div class="role-selector">
+            <div class="role-option active" id="role-student" onclick="selectRole('student')">
+                <i class="fas fa-user-graduate"></i>
+                <div class="role-name" data-i18n="login.student">Student</div>
+            </div>
+            <div class="role-option" id="role-teacher" onclick="selectRole('teacher')">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <div class="role-name" data-i18n="login.teacher">Teacher</div>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="registerForm">
+            <!-- Account Information -->
+            <h3><i class="fas fa-id-card"></i> <span data-i18n="register.accountInfo">Account Information</span></h3>
+            
+            <div class="form-group">
+                <label class="form-label" data-i18n="register.username">Username *</label>
+                <input type="text" id="username" class="form-control" required 
+                       data-i18n-placeholder="register.usernamePlaceholder"
+                       placeholder="Enter username (letters and numbers only)">
+                <small class="text-muted" data-i18n="register.usernameHint">Used for login, must be unique</small>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.password">Password *</label>
+                    <input type="password" id="password" class="form-control" required
+                           data-i18n-placeholder="register.passwordPlaceholder"
+                           placeholder="Enter password (min 6 characters)"
+                           oninput="checkPasswordStrength()">
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="strengthBar"></div>
+                    </div>
+                    <small id="strengthText" class="text-muted"></small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.confirmPassword">Confirm Password *</label>
+                    <input type="password" id="confirmPassword" class="form-control" required
+                           data-i18n-placeholder="register.confirmPasswordPlaceholder"
+                           placeholder="Re-enter password">
+                </div>
+            </div>
+
+            <!-- Personal Information -->
+            <h3><i class="fas fa-user"></i> <span data-i18n="register.personalInfo">Personal Information</span></h3>
+
+            <div class="form-group">
+                <label class="form-label" data-i18n="register.fullName">Full Name *</label>
+                <input type="text" id="fullName" class="form-control" required
+                       data-i18n-placeholder="register.fullNamePlaceholder"
+                       placeholder="Enter full name">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.email">Email *</label>
+                    <input type="email" id="email" class="form-control" required
+                           data-i18n-placeholder="register.emailPlaceholder"
+                           placeholder="your.email@school.jp">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.phone">Phone</label>
+                    <input type="tel" id="phone" class="form-control"
+                           data-i18n-placeholder="register.phonePlaceholder"
+                           placeholder="090-1234-5678">
+                </div>
+            </div>
+
+            <!-- Student-specific fields -->
+            <div id="studentFields">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.studentID">Student ID</label>
+                    <input type="text" id="studentID" class="form-control"
+                           data-i18n-placeholder="register.studentIDPlaceholder"
+                           placeholder="e.g., 2024001">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.classroom">Classroom *</label>
+                    <select id="classroom" class="form-control" required>
+                        <option value="">-- Select Classroom --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Teacher-specific fields -->
+            <div id="teacherFields" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.teacherID">Teacher ID</label>
+                    <input type="text" id="teacherID" class="form-control"
+                           data-i18n-placeholder="register.teacherIDPlaceholder"
+                           placeholder="e.g., T2024001">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="register.subject">Subject/Department</label>
+                    <input type="text" id="subject" class="form-control"
+                           data-i18n-placeholder="register.subjectPlaceholder"
+                           placeholder="e.g., Mathematics, Science">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-user-plus"></i>
+                <span data-i18n="register.createAccount">Create Account</span>
+            </button>
+
+            <div class="back-link">
+                <a href="index.html" data-i18n="register.backToLogin">← Back to Login</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="js/api-client.js"></script>
+    <script src="js/translations.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let selectedRole = 'student';
+
+        // Language switcher
+        function switchLanguage(lang) {
+            langManager.setLanguage(lang);
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + lang).classList.add('active');
+            updatePageTranslations();
+            loadClassrooms();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentLang = langManager.getLanguage();
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + currentLang).classList.add('active');
+            loadClassrooms();
+        });
+
+        // Role selection
+        function selectRole(role) {
+            selectedRole = role;
+            
+            // Update UI
+            document.querySelectorAll('.role-option').forEach(opt => opt.classList.remove('active'));
+            document.getElementById('role-' + role).classList.add('active');
+            
+            // Show/hide role-specific fields
+            if (role === 'student') {
+                document.getElementById('studentFields').style.display = 'block';
+                document.getElementById('teacherFields').style.display = 'none';
+                document.getElementById('classroom').required = true;
+            } else {
+                document.getElementById('studentFields').style.display = 'none';
+                document.getElementById('teacherFields').style.display = 'block';
+                document.getElementById('classroom').required = false;
+            }
+        }
+
+        // Load classrooms from Cloudflare D1
+        async function loadClassrooms() {
+            try {
+                const response = await apiClient.getClassrooms({ active: true });
+                
+                const select = document.getElementById('classroom');
+                select.innerHTML = '<option value="">-- Select Classroom --</option>';
+                
+                if (response.success && response.data && response.data.length > 0) {
+                    response.data.forEach(classroom => {
+                        const option = document.createElement('option');
+                        option.value = classroom.id; // Use ID instead of number
+                        option.textContent = `${classroom.classroom_number} - ${classroom.building}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading classrooms:', error);
+                // Fallback to showing empty state
+                showToast('Could not load classrooms. Please refresh the page.', 'warning');
+            }
+        }
+
+        // Password strength checker
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthText = document.getElementById('strengthText');
+            
+            if (password.length === 0) {
+                strengthBar.className = 'password-strength-bar';
+                strengthText.textContent = '';
+                return;
+            }
+            
+            let strength = 0;
+            if (password.length >= 6) strength++;
+            if (password.length >= 10) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+            
+            if (strength <= 2) {
+                strengthBar.className = 'password-strength-bar strength-weak';
+                strengthText.textContent = t('register.passwordWeak') || 'Weak password';
+            } else if (strength <= 4) {
+                strengthBar.className = 'password-strength-bar strength-medium';
+                strengthText.textContent = t('register.passwordMedium') || 'Medium strength';
+            } else {
+                strengthBar.className = 'password-strength-bar strength-strong';
+                strengthText.textContent = t('register.passwordStrong') || 'Strong password';
+            }
+        }
+
+        // Form submission - Register with Cloudflare D1
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const fullName = document.getElementById('fullName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            
+            // Validation
+            if (password !== confirmPassword) {
+                showToast(t('register.passwordMismatch') || 'Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast(t('register.passwordTooShort') || 'Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                showToast(t('register.invalidUsername') || 'Username can only contain letters, numbers, and underscore', 'error');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                // Prepare user data for Cloudflare D1
+                const userData = {
+                    username: username,
+                    password: password, // Will be hashed by backend
+                    full_name: fullName,
+                    email: email,
+                    phone: phone || null,
+                    role: selectedRole,
+                    classroom_id: selectedRole === 'student' ? document.getElementById('classroom').value : null
+                };
+                
+                // Register via API
+                const response = await apiClient.register(userData);
+                
+                if (response.success) {
+                    showToast(t('register.success') || 'Account created successfully! Please login.', 'success');
+                    
+                    // Redirect to login after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                } else {
+                    showToast(response.error || 'Registration failed', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                
+                // Handle specific error messages
+                if (error.message.includes('already exists')) {
+                    showToast(t('register.usernameExists') || 'Username or email already exists', 'error');
+                } else if (error.message.includes('timeout')) {
+                    showToast('Connection timeout. Please check your internet and try again.', 'error');
+                } else {
+                    showToast(t('register.error') || 'Failed to create account. Please try again.', 'error');
+                }
+            } finally {
+                hideLoading();
+            }
+        });
+    </script>
+</body>
+</html>

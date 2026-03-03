@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartClean - Demo Login (Offline)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2196F3 0%, #4CAF50 100%);
+            padding: 20px;
+        }
+        .login-container {
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+        }
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, #2196F3, #4CAF50);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .app-icon i { font-size: 40px; color: white; }
+        .login-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #2196F3, #4CAF50);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .demo-badge {
+            background: #FF9800;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .demo-accounts {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .demo-account {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .demo-account:hover {
+            border-color: #2196F3;
+            transform: translateY(-2px);
+        }
+        .demo-account strong { color: #2196F3; }
+        .info-box {
+            background: #E3F2FD;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="app-icon">
+            <i class="fas fa-broom"></i>
+        </div>
+        <h1 class="login-title">SmartClean Demo</h1>
+        <div class="demo-badge">
+            <i class="fas fa-flask"></i> OFFLINE DEMO MODE
+        </div>
+        
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">
+            Click any account below to login (no backend required)
+        </p>
+
+        <div class="demo-accounts">
+            <h3 style="margin-top: 0; color: #333;">
+                <i class="fas fa-users"></i> Demo Accounts
+            </h3>
+            
+            <div class="demo-account" onclick="quickLogin('student')">
+                <i class="fas fa-user-graduate" style="color: #2196F3;"></i>
+                <strong>Student Account</strong><br>
+                <small style="color: #666;">student1 / student123</small>
+            </div>
+            
+            <div class="demo-account" onclick="quickLogin('teacher')">
+                <i class="fas fa-chalkboard-teacher" style="color: #4CAF50;"></i>
+                <strong>Teacher Account</strong><br>
+                <small style="color: #666;">teacher1 / teacher123</small>
+            </div>
+            
+            <div class="demo-account" onclick="quickLogin('admin')">
+                <i class="fas fa-user-shield" style="color: #FF9800;"></i>
+                <strong>Admin Account</strong><br>
+                <small style="color: #666;">admin / admin123</small>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong><i class="fas fa-info-circle"></i> Note:</strong> This is a demo login that works offline. 
+            To use the real system with Cloudflare database, please deploy following 
+            <a href="QUICK_START_V3.md" style="color: #2196F3;">QUICK_START_V3.md</a>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="index.html" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Real Login
+            </a>
+        </div>
+    </div>
+
+    <script src="js/translations.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        // Demo user data (stored in memory)
+        const demoUsers = {
+            student: {
+                id: 'demo-student-1',
+                username: 'student1',
+                name: 'Demo Student',
+                full_name: 'Demo Student',
+                role: 'student',
+                email: 'student@demo.com',
+                classroom_id: 'demo-classroom-1'
+            },
+            teacher: {
+                id: 'demo-teacher-1',
+                username: 'teacher1',
+                name: 'Demo Teacher',
+                full_name: 'Demo Teacher',
+                role: 'teacher',
+                email: 'teacher@demo.com'
+            },
+            admin: {
+                id: 'demo-admin-1',
+                username: 'admin',
+                name: 'Demo Admin',
+                full_name: 'Demo Administrator',
+                role: 'admin',
+                email: 'admin@demo.com'
+            }
+        };
+
+        // Demo classrooms
+        const demoClassrooms = [
+            {
+                id: 'demo-classroom-1',
+                room_number: '3-A',
+                building: 'Main Building',
+                floor: '3rd Floor',
+                capacity: 40,
+                created_at: Date.now()
+            },
+            {
+                id: 'demo-classroom-2',
+                room_number: '2-B',
+                building: 'Main Building',
+                floor: '2nd Floor',
+                capacity: 35,
+                created_at: Date.now()
+            },
+            {
+                id: 'demo-classroom-3',
+                room_number: '4-C',
+                building: 'Science Building',
+                floor: '4th Floor',
+                capacity: 30,
+                created_at: Date.now()
+            }
+        ];
+
+        // Demo submissions
+        const demoSubmissions = [
+            {
+                id: 'demo-sub-1',
+                classroom_id: 'demo-classroom-1',
+                classroom_number: '3-A',
+                student_id: 'demo-student-1',
+                student_name: 'Demo Student',
+                submission_date: Date.now() - 86400000,
+                status: 'approved',
+                score: 95,
+                teacher_feedback: 'Excellent work!',
+                created_at: Date.now() - 86400000
+            },
+            {
+                id: 'demo-sub-2',
+                classroom_id: 'demo-classroom-2',
+                classroom_number: '2-B',
+                student_id: 'demo-student-1',
+                student_name: 'Demo Student',
+                submission_date: Date.now() - 172800000,
+                status: 'pending',
+                created_at: Date.now() - 172800000
+            }
+        ];
+
+        // Initialize demo data in localStorage
+        function initDemoData() {
+            if (!localStorage.getItem('demo_mode')) {
+                localStorage.setItem('demo_mode', 'true');
+                localStorage.setItem('demo_classrooms', JSON.stringify(demoClassrooms));
+                localStorage.setItem('demo_submissions', JSON.stringify(demoSubmissions));
+            }
+        }
+
+        // Quick login function
+        function quickLogin(role) {
+            const user = demoUsers[role];
+            
+            if (!user) {
+                alert('Invalid role');
+                return;
+            }
+
+            // Initialize demo data
+            initDemoData();
+
+            // Save user to localStorage
+            setCurrentUser(user);
+            
+            // Show success message
+            showToast(`Logged in as ${user.name} (${role})`, 'success');
+            
+            // Redirect based on role
+            setTimeout(() => {
+                switch (role) {
+                    case 'student':
+                        window.location.href = 'student-dashboard.html';
+                        break;
+                    case 'teacher':
+                        window.location.href = 'teacher-dashboard.html';
+                        break;
+                    case 'admin':
+                        window.location.href = 'admin-dashboard.html';
+                        break;
+                }
+            }, 500);
+        }
+
+        // Override fetch for demo mode
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+            // Check if in demo mode
+            if (localStorage.getItem('demo_mode') === 'true') {
+                
+                // Handle classrooms API
+                if (url.includes('tables/classrooms') || url.includes('api/classrooms')) {
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({
+                            data: JSON.parse(localStorage.getItem('demo_classrooms') || '[]'),
+                            total: 3
+                        })
+                    });
+                }
+                
+                // Handle submissions API
+                if (url.includes('tables/cleaning_submissions') || url.includes('api/submissions')) {
+                    const method = options?.method || 'GET';
+                    
+                    if (method === 'POST') {
+                        // Create new submission
+                        const submissions = JSON.parse(localStorage.getItem('demo_submissions') || '[]');
+                        const newSubmission = JSON.parse(options.body);
+                        newSubmission.id = 'demo-sub-' + Date.now();
+                        newSubmission.created_at = Date.now();
+                        submissions.push(newSubmission);
+                        localStorage.setItem('demo_submissions', JSON.stringify(submissions));
+                        
+                        return Promise.resolve({
+                            ok: true,
+                            json: () => Promise.resolve({ success: true, data: newSubmission })
+                        });
+                    }
+                    
+                    // Get submissions
+                    return Promise.resolve({
+                        ok: true,
+                        json: () => Promise.resolve({
+                            data: JSON.parse(localStorage.getItem('demo_submissions') || '[]'),
+                            total: 2
+                        })
+                    });
+                }
+            }
+            
+            // Fall back to real fetch for non-demo requests
+            return originalFetch(url, options);
+        };
+    </script>
+</body>
+</html>

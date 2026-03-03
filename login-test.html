@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test - SmartClean</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2196F3, #4CAF50);
+            padding: 20px;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 { color: #2196F3; text-align: center; margin-bottom: 10px; }
+        p { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover { background: #1976D2; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .demo-creds {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        .demo-creds h3 { font-size: 14px; margin-bottom: 10px; color: #666; }
+        .demo-item { 
+            padding: 8px;
+            background: white;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .message.show { display: block; }
+        .message.success { background: #E8F5E9; color: #2E7D32; border: 1px solid #4CAF50; }
+        .message.error { background: #FFEBEE; color: #C62828; border: 1px solid #F44336; }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #E3F2FD;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .status-item { margin: 5px 0; }
+        .status-item.ok { color: #2E7D32; }
+        .status-item.fail { color: #C62828; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>🧹 SmartClean</h1>
+        <p>Simple Login Test</p>
+        
+        <div id="message" class="message"></div>
+        
+        <div class="status" id="status">
+            <strong>System Status:</strong>
+            <div class="status-item" id="status-storage">⏳ Checking localStorage...</div>
+            <div class="status-item" id="status-data">⏳ Checking database...</div>
+            <div class="status-item" id="status-ready">⏳ Checking system...</div>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" id="username" placeholder="Enter username" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="password" placeholder="Enter password" required>
+            </div>
+            
+            <button type="submit" id="loginBtn">Login</button>
+        </form>
+        
+        <div class="demo-creds">
+            <h3>📝 Demo Accounts:</h3>
+            <div class="demo-item">student1 / student123</div>
+            <div class="demo-item">teacher1 / teacher123</div>
+            <div class="demo-item">admin / admin123</div>
+        </div>
+    </div>
+
+    <script>
+        // Simple users data
+        const DEMO_USERS = [
+            {
+                id: 'user001',
+                username: 'student1',
+                password: 'student123',
+                name: '田中太郎',
+                role: 'student'
+            },
+            {
+                id: 'user002',
+                username: 'teacher1',
+                password: 'teacher123',
+                name: '佐藤花子',
+                role: 'teacher'
+            },
+            {
+                id: 'user003',
+                username: 'admin',
+                password: 'admin123',
+                name: '鈴木一郎',
+                role: 'admin'
+            }
+        ];
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkSystem();
+        });
+
+        function checkSystem() {
+            // Check localStorage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                document.getElementById('status-storage').innerHTML = '✅ localStorage: OK';
+                document.getElementById('status-storage').className = 'status-item ok';
+            } catch (e) {
+                document.getElementById('status-storage').innerHTML = '❌ localStorage: FAILED';
+                document.getElementById('status-storage').className = 'status-item fail';
+                showMessage('localStorage not available. Try disabling private mode.', 'error');
+                return;
+            }
+
+            // Initialize demo data if needed
+            if (!localStorage.getItem('smartclean_users')) {
+                localStorage.setItem('smartclean_users', JSON.stringify(DEMO_USERS));
+                document.getElementById('status-data').innerHTML = '✅ Database: Initialized';
+            } else {
+                document.getElementById('status-data').innerHTML = '✅ Database: Found';
+            }
+            document.getElementById('status-data').className = 'status-item ok';
+
+            document.getElementById('status-ready').innerHTML = '✅ System: Ready';
+            document.getElementById('status-ready').className = 'status-item ok';
+        }
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type} show`;
+            setTimeout(() => {
+                msg.classList.remove('show');
+            }, 5000);
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                showMessage('Please enter username and password', 'error');
+                return;
+            }
+
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+
+            // Simulate small delay
+            setTimeout(() => {
+                try {
+                    // Get users from localStorage
+                    const usersJson = localStorage.getItem('smartclean_users');
+                    const users = usersJson ? JSON.parse(usersJson) : DEMO_USERS;
+                    
+                    // Find matching user
+                    const user = users.find(u => 
+                        u.username === username && u.password === password
+                    );
+                    
+                    if (user) {
+                        // Save user session
+                        localStorage.setItem('smartclean_user', JSON.stringify(user));
+                        
+                        showMessage(`✅ Login successful! Welcome ${user.name}`, 'success');
+                        
+                        // Redirect after 1 second
+                        setTimeout(() => {
+                            switch (user.role) {
+                                case 'student':
+                                    window.location.href = 'student-dashboard.html';
+                                    break;
+                                case 'teacher':
+                                    window.location.href = 'teacher-dashboard.html';
+                                    break;
+                                case 'admin':
+                                    window.location.href = 'admin-dashboard.html';
+                                    break;
+                                default:
+                                    window.location.href = 'index.html';
+                            }
+                        }, 1000);
+                    } else {
+                        showMessage('❌ Invalid username or password', 'error');
+                        loginBtn.disabled = false;
+                        loginBtn.textContent = 'Login';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showMessage('❌ Login failed: ' + error.message, 'error');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login';
+                }
+            }, 500);
+        });
+
+        // Console helper
+        console.log('%c🧹 SmartClean Login Test', 'font-size: 20px; color: #2196F3; font-weight: bold;');
+        console.log('Available demo accounts:');
+        DEMO_USERS.forEach(u => {
+            console.log(`  ${u.role}: ${u.username} / ${u.password}`);
+        });
+    </script>
+</body>
+</html>

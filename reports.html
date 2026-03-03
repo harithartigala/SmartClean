@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartClean - Reports</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { padding: 20px 20px 80px; }
+        .filter-section { background: white; padding: 20px; border-radius: var(--radius-lg); margin-bottom: 20px; }
+        .filter-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .report-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .summary-box { background: linear-gradient(135deg, #2196F3, #4CAF50); color: white; padding: 16px; border-radius: var(--radius-md); text-align: center; }
+        .summary-value { font-size: 28px; font-weight: 700; }
+        .summary-label { font-size: 12px; opacity: 0.9; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--medium-gray); }
+        .data-table th { background: var(--light-gray); font-weight: 600; }
+        .data-table tr:hover { background: var(--light-gray); }
+    </style>
+</head>
+<body>
+    <div class="language-selector">
+        <label data-i18n="language">Language</label>
+        <div class="language-toggle">
+            <button id="lang-en" class="active" onclick="switchLanguage('en')">🇺🇸 EN</button>
+            <button id="lang-ja" onclick="switchLanguage('ja')">🇯🇵 JP</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1><i class="fas fa-file-chart-line"></i> <span data-i18n="reports.title">Reports & Analytics</span></h1>
+
+        <div class="filter-section">
+            <h3><i class="fas fa-filter"></i> <span data-i18n="filter">Filter</span></h3>
+            <div class="filter-row">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="reports.dateRange">Date Range</label>
+                    <select id="dateRange" class="form-control" onchange="loadReport()">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="reports.classroom">Classroom</label>
+                    <select id="classroomFilter" class="form-control" onchange="loadReport()">
+                        <option value="">All Classrooms</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="reports.status">Status</label>
+                    <select id="statusFilter" class="form-control" onchange="loadReport()">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Needs Improvement</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 16px; display: flex; gap: 12px;">
+                <button class="btn btn-primary" onclick="loadReport()">
+                    <i class="fas fa-sync"></i> <span data-i18n="reports.generateReport">Generate Report</span>
+                </button>
+                <button class="btn btn-outline" onclick="exportReport()">
+                    <i class="fas fa-download"></i> <span data-i18n="reports.exportCSV">Export to CSV</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="reportSummary" class="report-summary"></div>
+
+        <div class="card">
+            <h3><i class="fas fa-table"></i> <span data-i18n="reports.summary">Summary</span></h3>
+            <div id="reportTable"></div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="admin-dashboard.html" class="nav-item"><i class="fas fa-home"></i><span data-i18n="nav.home">Home</span></a>
+        <a href="qr-management.html" class="nav-item"><i class="fas fa-qrcode"></i><span data-i18n="nav.qrCodes">QR</span></a>
+        <a href="reports.html" class="nav-item active"><i class="fas fa-chart-bar"></i><span data-i18n="nav.reports">Reports</span></a>
+        <a href="#" class="nav-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span data-i18n="nav.logout">Logout</span></a>
+    </div>
+
+    <script src="js/api-client.js"></script>
+    <script src="js/translations.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        checkAuth();
+        let currentData = [];
+
+        function switchLanguage(lang) {
+            langManager.setLanguage(lang);
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + lang).classList.add('active');
+            updatePageTranslations();
+            loadReport();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentLang = langManager.getLanguage();
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + currentLang).classList.add('active');
+            loadClassrooms();
+            loadReport();
+        });
+
+        async function loadClassrooms() {
+            try {
+                const response = await fetch('tables/classrooms');
+                const data = await response.json();
+                const select = document.getElementById('classroomFilter');
+                select.innerHTML = '<option value="">All Classrooms</option>' +
+                    data.data.map(c => `<option value="${c.number}">${c.number}</option>`).join('');
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+        }
+
+        async function loadReport() {
+            showLoading();
+            try {
+                const response = await fetch('tables/cleaning_submissions?limit=1000&sort=-created_at');
+                const result = await response.json();
+                let data = result.data || [];
+
+                // Apply filters
+                const dateRange = document.getElementById('dateRange').value;
+                const classroom = document.getElementById('classroomFilter').value;
+                const status = document.getElementById('statusFilter').value;
+
+                if (dateRange !== 'all') {
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    
+                    data = data.filter(item => {
+                        const itemDate = new Date(item.created_at);
+                        
+                        if (dateRange === 'today') {
+                            return itemDate >= today;
+                        } else if (dateRange === 'week') {
+                            const weekAgo = new Date(today);
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            return itemDate >= weekAgo;
+                        } else if (dateRange === 'month') {
+                            const monthAgo = new Date(today);
+                            monthAgo.setMonth(monthAgo.getMonth() - 1);
+                            return itemDate >= monthAgo;
+                        }
+                        return true;
+                    });
+                }
+
+                if (classroom) {
+                    data = data.filter(item => item.classroom_number === classroom);
+                }
+
+                if (status) {
+                    data = data.filter(item => item.status === status);
+                }
+
+                currentData = data;
+                displaySummary(data);
+                displayTable(data);
+            } catch (error) {
+                console.error('Load error:', error);
+                showToast(t('messages.error'), 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displaySummary(data) {
+            const total = data.length;
+            const approved = data.filter(d => d.status === 'approved').length;
+            const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+            const scoredItems = data.filter(d => d.score);
+            const avgScore = scoredItems.length > 0 
+                ? Math.round(scoredItems.reduce((sum, d) => sum + d.score, 0) / scoredItems.length)
+                : 0;
+
+            document.getElementById('reportSummary').innerHTML = `
+                <div class="summary-box">
+                    <div class="summary-value">${total}</div>
+                    <div class="summary-label">${t('reports.totalRecords')}</div>
+                </div>
+                <div class="summary-box">
+                    <div class="summary-value">${approvalRate}%</div>
+                    <div class="summary-label">${t('reports.approvalRate')}</div>
+                </div>
+                <div class="summary-box">
+                    <div class="summary-value">${avgScore}</div>
+                    <div class="summary-label">${t('reports.averageScore')}</div>
+                </div>
+                <div class="summary-box">
+                    <div class="summary-value">${approved}</div>
+                    <div class="summary-label">${t('status.approved')}</div>
+                </div>
+            `;
+        }
+
+        function displayTable(data) {
+            const container = document.getElementById('reportTable');
+            
+            if (data.length === 0) {
+                container.innerHTML = `<p class="text-center text-muted">${t('reports.noData')}</p>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>${t('cleaning.classroomNumber')}</th>
+                            <th>${t('cleaning.studentName')}</th>
+                            <th>${t('cleaning.date')}</th>
+                            <th>${t('submission.status')}</th>
+                            <th>${t('student.score')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(item => `
+                            <tr>
+                                <td>${item.classroom_number}</td>
+                                <td>${item.student_name}</td>
+                                <td>${formatDate(item.created_at)}</td>
+                                <td>
+                                    <span class="badge badge-${item.status === 'approved' ? 'success' : item.status === 'rejected' ? 'danger' : 'warning'}">
+                                        ${t('status.' + item.status)}
+                                    </span>
+                                </td>
+                                <td>${item.score || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function exportReport() {
+            if (currentData.length === 0) {
+                showToast(t('messages.noData'), 'warning');
+                return;
+            }
+
+            const exportData = currentData.map(item => ({
+                Classroom: item.classroom_number,
+                Student: item.student_name,
+                Date: formatDate(item.created_at),
+                Status: t('status.' + item.status),
+                Score: item.score || 0,
+                Feedback: item.teacher_feedback || ''
+            }));
+
+            exportToCSV(exportData, `smartclean_report_${Date.now()}.csv`);
+            showToast(t('messages.success'), 'success');
+        }
+    </script>
+</body>
+</html>

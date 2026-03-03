@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartClean - Teacher Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { padding: 20px 20px 80px; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: linear-gradient(135deg, #2196F3, #4CAF50); color: white; padding: 20px; border-radius: var(--radius-lg); }
+        .stat-value { font-size: 32px; font-weight: 700; }
+        .stat-label { font-size: 14px; opacity: 0.9; }
+        .submission-item { background: var(--white); padding: 16px; border-radius: var(--radius-md); margin-bottom: 12px; cursor: pointer; transition: transform 0.2s; }
+        .submission-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-tab { padding: 8px 16px; border: 2px solid var(--medium-gray); border-radius: var(--radius-md); background: transparent; cursor: pointer; transition: all 0.2s; }
+        .filter-tab.active { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
+    </style>
+</head>
+<body>
+    <div class="language-selector">
+        <label data-i18n="language">Language</label>
+        <div class="language-toggle">
+            <button id="lang-en" class="active" onclick="switchLanguage('en')">🇺🇸 EN</button>
+            <button id="lang-ja" onclick="switchLanguage('ja')">🇯🇵 JP</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1><i class="fas fa-chalkboard-teacher"></i> <span data-i18n="teacher.dashboard">Teacher Dashboard</span></h1>
+        <p><span data-i18n="teacher.welcome">Welcome</span>, <strong id="userName"></strong></p>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="pendingCount">0</div>
+                <div class="stat-label" data-i18n="teacher.pendingReviews">Pending Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="todayCount">0</div>
+                <div class="stat-label" data-i18n="teacher.todaySubmissions">Today's Submissions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgScore">0</div>
+                <div class="stat-label" data-i18n="teacher.averageScore">Average Score</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-list"></i> <span data-i18n="teacher.submissionsList">Submissions List</span></h2>
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterSubmissions('all')" data-i18n="teacher.all">All</button>
+                <button class="filter-tab" onclick="filterSubmissions('pending')" data-i18n="status.pending">Pending</button>
+                <button class="filter-tab" onclick="filterSubmissions('approved')" data-i18n="status.approved">Approved</button>
+                <button class="filter-tab" onclick="filterSubmissions('rejected')" data-i18n="status.rejected">Needs Improvement</button>
+            </div>
+            <div id="submissionsList"></div>
+        </div>
+    </div>
+
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" data-i18n="teacher.reviewSubmission">Review Submission</h3>
+                <button class="modal-close" onclick="hideModal('reviewModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="reviewContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideModal('reviewModal')" data-i18n="cancel">Cancel</button>
+                <button class="btn btn-danger" onclick="rejectSubmission()"><i class="fas fa-times"></i> <span data-i18n="teacher.reject">Request Improvement</span></button>
+                <button class="btn btn-success" onclick="approveSubmission()"><i class="fas fa-check"></i> <span data-i18n="teacher.approve">Approve</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a href="teacher-dashboard.html" class="nav-item active"><i class="fas fa-home"></i><span data-i18n="nav.home">Home</span></a>
+        <a href="reports.html" class="nav-item"><i class="fas fa-chart-bar"></i><span data-i18n="nav.reports">Reports</span></a>
+        <a href="#" class="nav-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span data-i18n="nav.logout">Logout</span></a>
+    </div>
+
+    <script src="js/api-client.js"></script>
+    <script src="js/translations.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        const user = checkAuth();
+        let allSubmissions = [];
+        let currentFilter = 'all';
+        let currentSubmission = null;
+
+        document.getElementById('userName').textContent = user.name;
+
+        function switchLanguage(lang) {
+            langManager.setLanguage(lang);
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + lang).classList.add('active');
+            updatePageTranslations();
+            loadSubmissions();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentLang = langManager.getLanguage();
+            document.querySelectorAll('.language-toggle button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('lang-' + currentLang).classList.add('active');
+            loadSubmissions();
+        });
+
+        async function loadSubmissions() {
+            try {
+                const response = await fetch('tables/cleaning_submissions?limit=100&sort=-created_at');
+                const data = await response.json();
+                allSubmissions = data.data || [];
+                updateStats();
+                displaySubmissions();
+            } catch (error) {
+                console.error('Load error:', error);
+            }
+        }
+
+        function updateStats() {
+            const pending = allSubmissions.filter(s => s.status === 'pending').length;
+            const today = allSubmissions.filter(s => {
+                const subDate = new Date(s.created_at);
+                const now = new Date();
+                return subDate.toDateString() === now.toDateString();
+            }).length;
+            const approved = allSubmissions.filter(s => s.status === 'approved' && s.score);
+            const avgScore = approved.length ? Math.round(approved.reduce((sum, s) => sum + s.score, 0) / approved.length) : 0;
+
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('todayCount').textContent = today;
+            document.getElementById('avgScore').textContent = avgScore;
+        }
+
+        function filterSubmissions(status) {
+            currentFilter = status;
+            document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            displaySubmissions();
+        }
+
+        function displaySubmissions() {
+            const filtered = currentFilter === 'all' ? allSubmissions : allSubmissions.filter(s => s.status === currentFilter);
+            const container = document.getElementById('submissionsList');
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-center text-muted" data-i18n="messages.noData">${t('messages.noData')}</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(sub => `
+                <div class="submission-item" onclick="showReview('${sub.id}')">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <strong>${sub.classroom_number}</strong> - ${sub.student_name}
+                            <br><small>${formatDate(sub.created_at)}</small>
+                        </div>
+                        <span class="badge badge-${sub.status === 'approved' ? 'success' : sub.status === 'rejected' ? 'danger' : 'warning'}">
+                            ${t('status.' + sub.status)}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showReview(submissionId) {
+            currentSubmission = allSubmissions.find(s => s.id === submissionId);
+            if (!currentSubmission) return;
+
+            const checklist = ['floor', 'desks', 'blackboard', 'windows', 'trash', 'organize', 'air']
+                .filter(task => currentSubmission['checklist_' + task])
+                .map(task => `<li>${t('cleaning.tasks.' + task)}</li>`)
+                .join('');
+
+            document.getElementById('reviewContent').innerHTML = `
+                <p><strong>${t('teacher.submittedBy')}:</strong> ${currentSubmission.student_name}</p>
+                <p><strong>${t('teacher.classroom')}:</strong> ${currentSubmission.classroom_number}</p>
+                <p><strong>${t('teacher.submittedAt')}:</strong> ${formatDate(currentSubmission.created_at)}</p>
+                <h4>${t('teacher.checklistItems')}</h4>
+                <ul>${checklist}</ul>
+                <h4>${t('teacher.photos')}</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;">
+                    ${(currentSubmission.photos || []).map(photo => `<img src="${photo}" style="width: 100%; border-radius: 8px;">`).join('')}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">${t('teacher.assignScore')}</label>
+                    <input type="number" id="reviewScore" class="form-control" min="0" max="100" placeholder="0-100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">${t('teacher.teacherFeedback')}</label>
+                    <textarea id="reviewFeedback" class="form-control" rows="4"></textarea>
+                </div>
+            `;
+
+            showModal('reviewModal');
+        }
+
+        async function approveSubmission() {
+            const score = parseInt(document.getElementById('reviewScore').value);
+            const feedback = document.getElementById('reviewFeedback').value;
+
+            if (!score || score < 0 || score > 100 || !feedback) {
+                showToast(t('teacher.validationError'), 'error');
+                return;
+            }
+
+            await updateSubmissionStatus('approved', score, feedback);
+        }
+
+        async function rejectSubmission() {
+            const feedback = document.getElementById('reviewFeedback').value;
+            if (!feedback) {
+                showToast(t('teacher.validationError'), 'error');
+                return;
+            }
+            await updateSubmissionStatus('rejected', 0, feedback);
+        }
+
+        async function updateSubmissionStatus(status, score, feedback) {
+            showLoading();
+            try {
+                await fetch(`tables/cleaning_submissions/${currentSubmission.id}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        status,
+                        score,
+                        teacher_feedback: feedback,
+                        reviewed_by: user.name,
+                        reviewed_at: Date.now()
+                    })
+                });
+
+                showToast(status === 'approved' ? t('teacher.approveSuccess') : t('teacher.rejectSuccess'), 'success');
+                hideModal('reviewModal');
+                await loadSubmissions();
+            } catch (error) {
+                showToast(t('teacher.reviewError'), 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+    </script>
+</body>
+</html>

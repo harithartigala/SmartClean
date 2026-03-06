@@ -6,7 +6,7 @@
 // ============================================
 const GITHUB_CONFIG = {
     // Your GitHub username
-    username: 'YOUR_GITHUB_USERNAME',
+    username: 'harithartigala',
     
     // Your repository name
     repo: 'smartclean',

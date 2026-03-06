@@ -6,7 +6,7 @@
 
 const API_CONFIG = {
     // Cloudflare Worker URL (update after deployment)
-    BASE_URL: 'https://smartclean-api.your-subdomain.workers.dev',
+    BASE_URL: 'https://smartclean-api.harithartigala.workers.dev',
     
     // Local development URL
     DEV_URL: 'http://localhost:8787',
